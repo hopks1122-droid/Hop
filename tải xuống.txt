@@ -1,0 +1,901 @@
+--[[
+
+    HOP-HUB Blox Fruits Mobile
+
+    Version: Final 1.0
+
+    Tác giả: HOP-HUD
+
+    Hỗ trợ: Delta, Fluxus, Hydrogen, Arceus X
+
+]]
+
+local LP = game.Players.LocalPlayer
+
+local PG = LP:WaitForChild("PlayerGui")
+
+local WS = game.Workspace
+
+local PS = game.Players
+
+local VIM = game:GetService("VirtualInputManager")
+
+local UIS = game:GetService("UserInputService")
+
+local SG = game:GetService("StarterGui")
+
+-- Xóa menu cũ
+
+pcall(function() 
+
+    if PG:FindFirstChild("HOPHUD") then PG.HOPHUD:Destroy() end
+
+end)
+
+for _, v in pairs(WS:GetDescendants()) do
+
+    if v.Name == "EP" or v.Name == "EF" then v:Destroy() end
+
+end
+
+-- Thông báo
+
+SG:SetCore("SendNotification", {
+
+    Title = "HOP-HUD",
+
+    Text = "Blox Fruits Mobile - Loaded!",
+
+    Duration = 5
+
+})
+
+-- ==================== SETTINGS ====================
+
+local on = {}
+
+local Settings = {
+
+    AttackRange = 70,
+
+    SpinSpeed = 50,
+
+    HealAmount = 1000,
+
+    MobCount = 25
+
+}
+
+-- ==================== FUNCTIONS ====================
+
+local function getPlayerLevel()
+
+    local ls = LP:FindFirstChild("leaderstats")
+
+    if ls then
+
+        local lv = ls:FindFirstChild("Level") or ls:FindFirstChild("LV") or ls:FindFirstChild("Lv")
+
+        if lv and lv:IsA("IntValue") then return lv.Value end
+
+    end
+
+    return 1
+
+end
+
+local questData = {
+
+    {min = 0, max = 10, npc = "Bandit Quest Giver", mob = "Bandit", island = "Starter"},
+
+    {min = 10, max = 25, npc = "Monkey Quest Giver", mob = "Monkey", island = "Jungle"},
+
+    {min = 25, max = 50, npc = "Pirate Quest Giver", mob = "Pirate", island = "Pirate Village"},
+
+    {min = 50, max = 75, npc = "Desert Quest Giver", mob = "Desert Bandit", island = "Desert"},
+
+    {min = 75, max = 100, npc = "Snow Quest Giver", mob = "Snow Bandit", island = "Frozen"},
+
+    {min = 100, max = 150, npc = "Marine Quest Giver", mob = "Marine", island = "Marine"},
+
+    {min = 150, max = 200, npc = "Sky Quest Giver", mob = "Sky Bandit", island = "Sky"},
+
+    {min = 200, max = 300, npc = "Fishman Quest Giver", mob = "Fishman", island = "Fishman"},
+
+    {min = 300, max = 500, npc = "God Quest Giver", mob = "Sky Bandit", island = "Sky Island"},
+
+    {min = 500, max = 700, npc = "Samurai Quest Giver", mob = "Samurai", island = "Samurai"},
+
+    {min = 700, max = 1000, npc = "Ninja Quest Giver", mob = "Ninja", island = "Ninja"},
+
+    {min = 1000, max = 1500, npc = "Dragon Quest Giver", mob = "Dragon", island = "Dragon"},
+
+    {min = 1500, max = 2000, npc = "Angel Quest Giver", mob = "Angel", island = "Heaven"},
+
+    {min = 2000, max = 2400, npc = "Titan Quest Giver", mob = "Titan", island = "Titan"},
+
+    {min = 2400, max = 2800, npc = "God Boss Quest Giver", mob = "God", island = "God Realm"},
+
+    {min = 2800, max = 9999, npc = "", mob = "", island = "Max"},
+
+}
+
+local function getQuestByLevel(level)
+
+    for _, q in pairs(questData) do
+
+        if level >= q.min and level < q.max then return q end
+
+    end
+
+    return questData[1]
+
+end
+
+local function isEnemy(obj)
+
+    if not obj or not obj.Parent or not obj:IsA("Model") then return false end
+
+    if obj == LP.Character then return false end
+
+    if PS:GetPlayerFromCharacter(obj) then return false end
+
+    local h = obj:FindFirstChild("Humanoid")
+
+    local r = obj:FindFirstChild("HumanoidRootPart")
+
+    if not h or not r or h.Health <= 0 then return false end
+
+    return true
+
+end
+
+local function isRightEnemy(obj, mobName)
+
+    if not isEnemy(obj) then return false end
+
+    if mobName ~= "" and not obj.Name:lower():find(mobName:lower()) then return false end
+
+    return true
+
+end
+
+local function findAndClickNPC(npcName)
+
+    for _, v in pairs(WS:GetDescendants()) do
+
+        if v:IsA("Model") and v.Name:lower():find(npcName:lower()) then
+
+            local head = v:FindFirstChild("Head")
+
+            if head then
+
+                local c = LP.Character
+
+                if c then
+
+                    local r = c:FindFirstChild("HumanoidRootPart")
+
+                    if r then
+
+                        r.CFrame = CFrame.new(head.Position + Vector3.new(0, 3, 5))
+
+                        wait(0.3)
+
+                        VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+
+                        wait(0.1)
+
+                        VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+
+                        return true
+
+                    end
+
+                end
+
+            end
+
+        end
+
+    end
+
+    return false
+
+end
+
+local fruitKeywords = {
+
+    "fruit", "devil", "bomb-bomb", "spike-spike", "chop-chop", "spring-spring",
+
+    "smoke-smoke", "flame-flame", "ice-ice", "sand-sand", "dark-dark", "light-light",
+
+    "magma-magma", "quake-quake", "buddh-buddh", "phoenix-phoenix", "rumble-rumble",
+
+    "portal-portal", "dough-dough", "dragon-dragon", "leopard-leopard",
+
+    "venom-venom", "control-control", "spirit-spirit", "shadow-shadow",
+
+    "gravity-gravity", "paw-paw", "rubber-rubber", "string-string", "diamond-diamond"
+
+}
+
+local function isFruit(obj)
+
+    local n = obj.Name:lower()
+
+    local notFruit = {"wing", "sword", "blade", "gun", "rifle", "accessory", "hat", "cape", "belt", "boot", "shield"}
+
+    for _, kw in pairs(notFruit) do if n:find(kw) then return false end end
+
+    for _, kw in pairs(fruitKeywords) do if n:find(kw) then return true end end
+
+    return false
+
+end
+
+-- ==================== GUI ====================
+
+local gui = Instance.new("ScreenGui")
+
+gui.Name = "HOPHUD"
+
+gui.ResetOnSpawn = false
+
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+gui.Parent = PG
+
+-- Nút mở menu (avatar)
+
+local openBtn = Instance.new("TextButton")
+
+openBtn.Size = UDim2.new(0, 55, 0, 55)
+
+openBtn.Position = UDim2.new(0.85, 0, 0.06, 0)
+
+openBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+
+openBtn.BackgroundTransparency = 0.2
+
+openBtn.Text = ""
+
+openBtn.BorderSizePixel = 0
+
+openBtn.ZIndex = 100
+
+openBtn.Parent = gui
+
+Instance.new("UICorner", openBtn).CornerRadius = UDim.new(1, 0)
+
+Instance.new("UIStroke", openBtn).Color = Color3.fromRGB(255, 255, 255)
+
+-- Avatar trong nút
+
+local avatar = Instance.new("ImageLabel")
+
+avatar.Size = UDim2.new(1, -4, 1, -4)
+
+avatar.Position = UDim2.new(0, 2, 0, 2)
+
+avatar.BackgroundTransparency = 1
+
+avatar.BorderSizePixel = 0
+
+avatar.ZIndex = 101
+
+avatar.Parent = openBtn
+
+Instance.new("UICorner", avatar).CornerRadius = UDim.new(1, 0)
+
+spawn(function()
+
+    local userId = LP.UserId
+
+    local thumb, ready = PS:GetUserThumbnailAsync(userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+
+    avatar.Image = thumb
+
+end)
+
+-- Menu chính
+
+local menu = Instance.new("Frame")
+
+menu.Size = UDim2.new(0, 200, 0, 350)
+
+menu.Position = UDim2.new(0.5, -100, 0.5, -175)
+
+menu.BackgroundColor3 = Color3.fromRGB(10, 10, 20)
+
+menu.BackgroundTransparency = 0
+
+menu.BorderSizePixel = 2
+
+menu.BorderColor3 = Color3.fromRGB(255, 255, 255)
+
+menu.Visible = false
+
+menu.ZIndex = 99
+
+menu.Parent = gui
+
+-- Thanh tiêu đề
+
+local titleBar = Instance.new("TextButton")
+
+titleBar.Size = UDim2.new(1, 0, 0, 35)
+
+titleBar.BackgroundColor3 = Color3.fromRGB(60, 30, 130)
+
+titleBar.Text = "  HOP-HUD [≡]"
+
+titleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+titleBar.TextSize = 14
+
+titleBar.Font = Enum.Font.ArialBold
+
+titleBar.TextXAlignment = Enum.TextXAlignment.Left
+
+titleBar.BorderSizePixel = 0
+
+titleBar.ZIndex = 99
+
+titleBar.Parent = menu
+
+-- Scroll
+
+local scroll = Instance.new("ScrollingFrame")
+
+scroll.Size = UDim2.new(1, -4, 1, -37)
+
+scroll.Position = UDim2.new(0, 2, 0, 35)
+
+scroll.BackgroundTransparency = 1
+
+scroll.BorderSizePixel = 0
+
+scroll.ScrollBarThickness = 3
+
+scroll.CanvasSize = UDim2.new(0, 0, 0, 500)
+
+scroll.ZIndex = 99
+
+scroll.Parent = menu
+
+local list = Instance.new("UIListLayout")
+
+list.Padding = UDim.new(0, 2)
+
+list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+list.SortOrder = Enum.SortOrder.LayoutOrder
+
+list.Parent = scroll
+
+-- Label
+
+local function AddLabel(text)
+
+    local lb = Instance.new("TextLabel")
+
+    lb.Size = UDim2.new(1, -8, 0, 18)
+
+    lb.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
+
+    lb.BackgroundTransparency = 0
+
+    lb.Text = text
+
+    lb.TextColor3 = Color3.fromRGB(255, 255, 150)
+
+    lb.TextSize = 11
+
+    lb.Font = Enum.Font.ArialBold
+
+    lb.Parent = scroll
+
+end
+
+-- Nút
+
+local function AddButton(name, callback)
+
+    local btn = Instance.new("TextButton")
+
+    btn.Size = UDim2.new(1, -8, 0, 32)
+
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+
+    btn.BackgroundTransparency = 0
+
+    btn.Text = name .. ": OFF"
+
+    btn.TextSize = 12
+
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    btn.Font = Enum.Font.ArialBold
+
+    btn.BorderSizePixel = 0
+
+    btn.ZIndex = 99
+
+    btn.Parent = scroll
+
+    
+
+    local isOn = false
+
+    btn.MouseButton1Click:Connect(function()
+
+        isOn = not isOn
+
+        btn.Text = name .. ": " .. (isOn and "ON" or "OFF")
+
+        btn.BackgroundColor3 = isOn and Color3.fromRGB(0, 140, 60) or Color3.fromRGB(30, 30, 45)
+
+        callback(isOn)
+
+    end)
+
+end
+
+-- ==================== MENU ====================
+
+AddLabel("👤 " .. LP.Name .. " | Lv: " .. getPlayerLevel())
+
+AddLabel("━━ FARM ━━")
+
+AddButton("AUTO FARM", function(v)
+
+    on.farm = v
+
+    if v then spawn(function() while on.farm do wait(0.01)
+
+        pcall(function()
+
+            local c = LP.Character; if not c then return end
+
+            local r = c:FindFirstChild("HumanoidRootPart"); local h = c:FindFirstChild("Humanoid")
+
+            if not r or not h then return end
+
+            
+
+            local tool = c:FindFirstChildOfClass("Tool")
+
+            if not tool then local bp = LP:FindFirstChild("Backpack"); if bp then for _, t in pairs(bp:GetChildren()) do if t:IsA("Tool") then h:EquipTool(t); break end end end end
+
+            
+
+            local level = getPlayerLevel()
+
+            local quest = getQuestByLevel(level)
+
+            
+
+            local count = 0
+
+            for _, o in pairs(WS:GetDescendants()) do
+
+                if count >= Settings.MobCount then break end
+
+                if isRightEnemy(o, quest.mob) then
+
+                    local orr = o:FindFirstChild("HumanoidRootPart")
+
+                    if orr and (r.Position - orr.Position).Magnitude <= 500 then
+
+                        orr.CFrame = CFrame.new(r.Position.X + math.random(-2,2), r.Position.Y - 3, r.Position.Z + math.random(-2,2))
+
+                        local oh = o:FindFirstChild("Humanoid"); if oh then oh.WalkSpeed = 0 end
+
+                        count = count + 1
+
+                    end
+
+                end
+
+            end
+
+            
+
+            for _, o in pairs(WS:GetDescendants()) do
+
+                if isRightEnemy(o, quest.mob) then
+
+                    local orr = o:FindFirstChild("HumanoidRootPart")
+
+                    if orr and (r.Position - orr.Position).Magnitude <= 20 then
+
+                        local ct = c:FindFirstChildOfClass("Tool"); if ct then ct:Activate() end
+
+                        VIM:SendMouseButtonEvent(0,0,0,true,game,0); VIM:SendMouseButtonEvent(0,0,0,false,game,0)
+
+                    end
+
+                end
+
+            end
+
+        end)
+
+    end end)
+
+end)
+
+AddButton("AUTO QUEST", function(v)
+
+    on.quest = v
+
+    if v then spawn(function() while on.quest do
+
+        pcall(function()
+
+            local level = getPlayerLevel()
+
+            local quest = getQuestByLevel(level)
+
+            if quest.npc == "" then wait(5); return end
+
+            
+
+            findAndClickNPC(quest.npc)
+
+            wait(1)
+
+            
+
+            local c = LP.Character; if not c then return end
+
+            local r = c:FindFirstChild("HumanoidRootPart"); local h = c:FindFirstChild("Humanoid")
+
+            if not r or not h then return end
+
+            
+
+            local tool = c:FindFirstChildOfClass("Tool")
+
+            if not tool then local bp = LP:FindFirstChild("Backpack"); if bp then for _, t in pairs(bp:GetChildren()) do if t:IsA("Tool") then h:EquipTool(t); break end end end end
+
+            
+
+            local killCount = 0
+
+            while killCount < 10 and on.quest do wait(0.05)
+
+                pcall(function()
+
+                    for _, o in pairs(WS:GetDescendants()) do
+
+                        if isRightEnemy(o, quest.mob) then
+
+                            local orr = o:FindFirstChild("HumanoidRootPart")
+
+                            local oh = o:FindFirstChild("Humanoid")
+
+                            if orr and oh and oh.Health > 0 then
+
+                                if (r.Position - orr.Position).Magnitude <= 500 and (r.Position - orr.Position).Magnitude > 20 then
+
+                                    orr.CFrame = CFrame.new(r.Position.X + math.random(-2,2), r.Position.Y - 3, r.Position.Z + math.random(-2,2))
+
+                                    oh.WalkSpeed = 0
+
+                                end
+
+                                if (r.Position - orr.Position).Magnitude <= 20 then
+
+                                    local ct = c:FindFirstChildOfClass("Tool"); if ct then ct:Activate() end
+
+                                    VIM:SendMouseButtonEvent(0,0,0,true,game,0); VIM:SendMouseButtonEvent(0,0,0,false,game,0)
+
+                                    if oh.Health <= 0 then killCount = killCount + 1 end
+
+                                end
+
+                            end
+
+                        end
+
+                    end
+
+                end)
+
+            end
+
+            
+
+            findAndClickNPC(quest.npc)
+
+        end)
+
+        wait(2)
+
+    end end)
+
+end)
+
+AddButton("KILL AURA", function(v)
+
+    on.killaura = v
+
+    if v then spawn(function() while on.killaura do wait(0.1)
+
+        pcall(function()
+
+            local c = LP.Character; if not c then return end
+
+            local r = c:FindFirstChild("HumanoidRootPart"); local h = c:FindFirstChild("Humanoid")
+
+            if not r or not h then return end
+
+            local tool = c:FindFirstChildOfClass("Tool")
+
+            if not tool then local bp = LP:FindFirstChild("Backpack"); if bp then for _, t in pairs(bp:GetChildren()) do if t:IsA("Tool") then h:EquipTool(t); break end end end end
+
+            for _, o in pairs(WS:GetDescendants()) do
+
+                if isEnemy(o) then
+
+                    local orr = o:FindFirstChild("HumanoidRootPart")
+
+                    if orr and (r.Position - orr.Position).Magnitude <= Settings.AttackRange then
+
+                        orr.CFrame = r.CFrame * CFrame.new(0,0,5)
+
+                        local ct = c:FindFirstChildOfClass("Tool"); if ct then ct:Activate() end
+
+                        VIM:SendMouseButtonEvent(0,0,0,true,game,0); VIM:SendMouseButtonEvent(0,0,0,false,game,0)
+
+                    end
+
+                end
+
+            end
+
+        end)
+
+    end end)
+
+end)
+
+AddLabel("━━ MOVEMENT ━━")
+
+AddButton("FLY TO MOB", function(v)
+
+    on.flymob = v
+
+    if v then spawn(function() while on.flymob do wait(0.1)
+
+        pcall(function()
+
+            local c = LP.Character; if not c then return end
+
+            local r = c:FindFirstChild("HumanoidRootPart"); if not r then return end
+
+            local closest, minDist = nil, 500
+
+            for _, o in pairs(WS:GetDescendants()) do
+
+                if isEnemy(o) then
+
+                    local orr = o:FindFirstChild("HumanoidRootPart")
+
+                    if orr then local d = (r.Position - orr.Position).Magnitude; if d < minDist then minDist = d; closest = orr end end
+
+                end
+
+            end
+
+            if closest then r.CFrame = CFrame.new(closest.Position + Vector3.new(0, 5, 0)); r.Velocity = Vector3.new(0, 15, 0) end
+
+        end)
+
+    end end)
+
+end)
+
+AddButton("FLY TO FRUIT", function(v)
+
+    on.flyfruit = v
+
+    if v then spawn(function() while on.flyfruit do wait(0.2)
+
+        pcall(function()
+
+            local c = LP.Character; if not c then return end
+
+            local r = c:FindFirstChild("HumanoidRootPart"); if not r then return end
+
+            local closest, minDist = nil, 2000
+
+            for _, o in pairs(WS:GetDescendants()) do
+
+                if (o:IsA("Tool") or o:IsA("Model")) and isFruit(o) then
+
+                    local part = o:FindFirstChild("Handle") or o:FindFirstChild("MeshPart") or o:FindFirstChild("Part")
+
+                    if part then local d = (r.Position - part.Position).Magnitude; if d < minDist then minDist = d; closest = part end end
+
+                end
+
+            end
+
+            if closest then r.CFrame = CFrame.new(closest.Position + Vector3.new(0, 3, 0)); r.Velocity = Vector3.new(0, 20, 0) end
+
+        end)
+
+    end end)
+
+end)
+
+AddLabel("━━ COMBAT ━━")
+
+AddButton("GOD MODE", function(v)
+
+    on.god = v
+
+    if v then spawn(function() while on.god do wait()
+
+        pcall(function()
+
+            local c = LP.Character; if c then local h = c:FindFirstChild("Humanoid")
+
+            if h then h:SetStateEnabled(Enum.HumanoidStateType.Dead, false); h.MaxHealth = 99999; h.Health = 99999 end end
+
+        end)
+
+    end end) end
+
+end)
+
+AddButton("AUTO HEAL", function(v)
+
+    on.heal = v
+
+    if v then spawn(function() while on.heal do wait(1)
+
+        pcall(function()
+
+            local c = LP.Character; if c then local h = c:FindFirstChild("Humanoid")
+
+            if h and h.Health > 0 then h.Health = math.min(h.Health + Settings.HealAmount, h.MaxHealth) end end
+
+        end)
+
+    end end) end
+
+end)
+
+AddButton("SPIN BOT", function(v)
+
+    on.spin = v
+
+    if v then spawn(function() while on.spin do wait()
+
+        pcall(function() local c = LP.Character; if c then local r = c:FindFirstChild("HumanoidRootPart"); if r then r.CFrame = r.CFrame * CFrame.Angles(0, math.rad(Settings.SpinSpeed)/100, 0) end end end)
+
+    end end) end
+
+end)
+
+AddLabel("━━ VISUAL ━━")
+
+AddButton("PLAYER ESP", function(v)
+
+    on.esp = v
+
+    if v then
+
+        for _, p in pairs(PS:GetPlayers()) do
+
+            if p ~= LP and p.Character then
+
+                local head = p.Character:FindFirstChild("Head")
+
+                if head and not head:FindFirstChild("EP") then
+
+                    local bg = Instance.new("BillboardGui"); bg.Name = "EP"; bg.Adornee = head
+
+                    bg.Size = UDim2.new(0,80,0,14); bg.StudsOffset = Vector3.new(0,2,0); bg.AlwaysOnTop = true; bg.Parent = head
+
+                    local txt = Instance.new("TextLabel", bg); txt.Size = UDim2.new(1,0,1,0)
+
+                    txt.BackgroundColor3 = Color3.fromRGB(0,0,0); txt.Text = p.Name
+
+                    txt.TextColor3 = Color3.fromRGB(255,255,255); txt.TextSize = 10; txt.Font = Enum.Font.ArialBold
+
+                end
+
+            end
+
+        end
+
+    else
+
+        for _, v in pairs(WS:GetDescendants()) do if v.Name == "EP" then v:Destroy() end end
+
+    end
+
+end)
+
+AddButton("FRUIT ESP", function(v)
+
+    on.espfruit = v
+
+    if v then spawn(function() while on.espfruit do wait(3)
+
+        pcall(function()
+
+            for _, o in pairs(WS:GetDescendants()) do
+
+                if isFruit(o) then
+
+                    local p = o:FindFirstChild("Handle") or o:FindFirstChild("MeshPart")
+
+                    if p and not p:FindFirstChild("EF") then
+
+                        local bg = Instance.new("BillboardGui"); bg.Name = "EF"; bg.Adornee = p
+
+                        bg.Size = UDim2.new(0,100,0,16); bg.StudsOffset = Vector3.new(0,2,0); bg.AlwaysOnTop = true; bg.Parent = p
+
+                        local txt = Instance.new("TextLabel", bg); txt.Size = UDim2.new(1,0,1,0)
+
+                        txt.BackgroundColor3 = Color3.fromRGB(255,100,0); txt.BackgroundTransparency = 0.2
+
+                        txt.Text = "🍎 " .. o.Name; txt.TextColor3 = Color3.fromRGB(255,255,255); txt.TextSize = 10; txt.Font = Enum.Font.ArialBold
+
+                    end
+
+                end
+
+            end
+
+        end)
+
+    end end)
+
+    else
+
+        for _, v in pairs(WS:GetDescendants()) do if v.Name == "EF" then v:Destroy() end end
+
+    end
+
+end)
+
+AddLabel("━━ ━━")
+
+AddLabel("HOP-HUD by HOP")
+
+AddLabel("Blox Fruits Mobile")
+
+-- Nút đóng
+
+local closeBtn = Instance.new("TextButton")
+
+closeBtn.Size = UDim2.new(1, -8, 0, 26)
+
+closeBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
+
+closeBtn.Text = "CLOSE"
+
+closeBtn.TextSize = 12
+
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+closeBtn.Font = Enum.Font.ArialBold
+
+closeBtn.BorderSizePixel = 0
+
+closeBtn.ZIndex = 99
+
+closeBtn.Parent = scroll
+
+-- ==================== LOGIC ====================
+
+openBtn.MouseButton1Click:Connect(function() menu.Visible = not menu.Visible end)
+
+closeBtn.MouseButton1Click:Connect(function() menu.Visible = fal
